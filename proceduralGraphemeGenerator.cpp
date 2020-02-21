@@ -29,7 +29,7 @@ int **grid;                         //init this generation grid
 int **grid2;                        //init future generation grid
 int fillProbability;                //percentage of the grid that we fill on initial seed before running the cellular automata
 int size_x = 16, size_y = 16;       //initial size of the grid
-int nGraphemes =1;                   //counter for the generations
+int nGraphemes =0;                   //counter for the generations
 char filename[sizeof "File100.bmp"];// preallocate the filename size
 char runz[sizeof "potrace.exe --svg File100.bmp"]; //we're going to shellexec potrace to make svgs, so preallocate the length of the shellexec string
 
