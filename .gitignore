@@ -25,7 +25,9 @@ sites
 *.la
 *.a
 *.lib
-
+# output files
+*.svg
+*.bmp
 # Executables
 *.exe
 *.out

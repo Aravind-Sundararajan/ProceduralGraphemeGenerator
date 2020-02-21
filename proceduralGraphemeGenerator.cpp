@@ -5,167 +5,188 @@
 #include "EasyBMP.h"
 #include <iostream>
 #include <cstdlib>
-#define MAX_DATE 12
-#define TILE_FLOOR 0
-#define TILE_WALL 1
+#define EMPTY_SPACE 0
+#define FILLED_SPACE 1
 using namespace std;
 using std:: string;
- 	int r1_cutoff, r2_cutoff;
- 	int reps;
- 	int seed1;
- int **grid;
- int **grid2;
- int fillprob;
- int size_x = 16, size_y = 16;
- int repetitor =1;
- char filename[sizeof "File100.bmp"];
-char runz[sizeof "potrace.exe --svg File100.bmp"];
- int randpick(void)
- {
- 	if(rand()%100 < fillprob)
-    {
-        return TILE_WALL;
-    }
- 	else
-    {
- 		return TILE_FLOOR;
-    }
- }
+//r1 and r2 cutoffs are used for the logic on deciding if we should keep EMPTY_SPACE in the future generation grid.
+int r1_cutoff; //the number of tiles within r1_level step of this tile should be greater than R1_cutoff 
+int r2_cutoff; //the number of tiles at r2_level steps of this tile should be less than R2_cutoff
+int r1_cutoff_level; //the number of tiles away that we should count filled spaces to compare to r1_cutoff
+int r2_cutoff_level; //the number of tiles away that we should count filled spaces to compare to r2_cutoff
+/*
+if count_r1 >= r1_cutoff || count_r2 <= r2_cutoff
+then make R an FILLED_SPACE!
+░░░░2
+░▓▓1░
+░▓R▓░
+░▓▓▓░
+░░░░░
+*/
+int generations;                     //the number of graphemes we should make
+int seedNumber;                     //the starting seed we use when seeding the grid
+int **grid;                         //init this generation grid
+int **grid2;                        //init future generation grid
+int fillProbability;                //percentage of the grid that we fill on initial seed before running the cellular automata
+int size_x = 16, size_y = 16;       //initial size of the grid
+int nGraphemes =1;                   //counter for the generations
+char filename[sizeof "File100.bmp"];// preallocate the filename size
+char runz[sizeof "potrace.exe --svg File100.bmp"]; //we're going to shellexec potrace to make svgs, so preallocate the length of the shellexec string
 
- void initmap(void)
- {
-	int xi, yi;
+int randpick(void) //convenience method that we use to fill the grids with 0s or 1s
+{
+if(rand()%100 < fillProbability){
+	return FILLED_SPACE;
+}
+else{
+	return EMPTY_SPACE;
+}
+}
 
-	grid  = (int**)malloc(sizeof(int*) * size_y);
-	grid2 = (int**)malloc(sizeof(int*) * size_y);
+void initmap(void) //initialize our map to the specified size 
+{
+int xIndex, yIndex;
+grid  = (int**)malloc(sizeof(int*) * size_y); //grid has size_y rows
+grid2 = (int**)malloc(sizeof(int*) * size_y);
 
-	for(yi=0; yi<size_y; yi++)
-	{
-		grid [yi] = (int*)malloc(sizeof(int) * size_x);
-		grid2[yi] = (int*)malloc(sizeof(int) * size_x);
-	}
+for(yIndex=0; yIndex<size_y; yIndex++)
+{
+	grid [yIndex] = (int*)malloc(sizeof(int) * size_x); //grid has size_x columns
+	grid2[yIndex] = (int*)malloc(sizeof(int) * size_x);
+}
 
-	for(yi=1; yi<size_y-1; yi++)
-	for(xi=1; xi<size_x-1; xi++)
-		grid[yi][xi] = randpick();
+for(yIndex=1; yIndex<size_y-1; yIndex++)
+{
+for(xIndex=1; xIndex<size_x-1; xIndex++)
+{
+	grid[yIndex][xIndex] = randpick();
+}
+}
 
-	for(yi=0; yi<size_y; yi++)
-	for(xi=0; xi<size_x; xi++)
-		grid2[yi][xi] = TILE_WALL;
+for(yIndex=0; yIndex<size_y; yIndex++)
+{
+for(xIndex=0; xIndex<size_x; xIndex++)
+{
+	grid2[yIndex][xIndex] = FILLED_SPACE;
+}
+}
 
-	for(yi=0; yi<size_y; yi++)
-		grid[yi][0] = grid[yi][size_x-1] = TILE_WALL;
-	for(xi=0; xi<size_x; xi++)
-		grid[0][xi] = grid[size_y-1][xi] = TILE_WALL;
- }
+for(yIndex=0; yIndex<size_y; yIndex++)
+{
+	grid[yIndex][0] = grid[yIndex][size_x-1] = FILLED_SPACE;
+}
+for(xIndex=0; xIndex<size_x; xIndex++)
+{
+	grid[0][xIndex] = grid[size_y-1][xIndex] = FILLED_SPACE;
+}
+
+}
 
  void generation(void)
  {
-	int xi, yi, ii, jj;
-
-	for(yi=1; yi<size_y-1; yi++)
-	for(xi=1; xi<size_x-1; xi++)
+	int xIndex;
+	int yIndex;
+	int	xCutoffIndex;
+	int	yCutoffIndex;
+ 
+	for(yIndex=1; yIndex<size_y-1; yIndex++)
+	{
+	for(xIndex=1; xIndex<size_x-1; xIndex++)
  	{
  		int adjcount_r1 = 0,
  		    adjcount_r2 = 0;
-
- 		for(ii=-1; ii<=1; ii++)
-		for(jj=-1; jj<=1; jj++)
+		
+ 		for(yCutoffIndex=yIndex-r1_cutoff_level; yCutoffIndex<=yIndex+r1_cutoff_level; yCutoffIndex++)
  		{
- 			if(grid[yi+ii][xi+jj] != TILE_FLOOR)
+		for(xCutoffIndex=xIndex-r1_cutoff_level; xCutoffIndex<=xIndex+r1_cutoff_level; xCutoffIndex++)
+ 		{
+			if(yCutoffIndex<0 || xCutoffIndex<0 || yCutoffIndex>=size_y || xCutoffIndex>=size_x)
+ 				continue;
+ 			if(grid[yCutoffIndex][xCutoffIndex] != EMPTY_SPACE)
  				adjcount_r1++;
  		}
- 		for(ii=yi-2; ii<=yi+2; ii++)
- 		for(jj=xi-2; jj<=xi+2; jj++)
+		}
+		
+ 		for(yCutoffIndex=yIndex-r2_cutoff_level; yCutoffIndex<=yIndex+r2_cutoff_level; yCutoffIndex++)
+		{
+ 		for(xCutoffIndex=xIndex-r2_cutoff_level; xCutoffIndex<=xIndex+r2_cutoff_level; xCutoffIndex++)
  		{
- 			if(abs(ii-yi)==2 && abs(jj-xi)==2)
+ 			if(abs(yCutoffIndex-yIndex)==r2_cutoff_level && abs(xCutoffIndex-xIndex)==r2_cutoff_level)
  				continue;
- 			if(ii<0 || jj<0 || ii>=size_y || jj>=size_x)
+ 			if(yCutoffIndex<0 || xCutoffIndex<0 || yCutoffIndex>=size_y || xCutoffIndex>=size_x)
  				continue;
- 			if(grid[ii][jj] != TILE_FLOOR)
+ 			if(grid[yCutoffIndex][xCutoffIndex] != EMPTY_SPACE)
  				adjcount_r2++;
  		}
+		}
+		
  		if(adjcount_r1 >= r1_cutoff || adjcount_r2 <= r2_cutoff)
- 			grid2[yi][xi] = TILE_WALL;
+ 			grid2[yIndex][xIndex] = FILLED_SPACE;
  		else
- 			grid2[yi][xi] = TILE_FLOOR;
+ 			grid2[yIndex][xIndex] = EMPTY_SPACE;
  	}
- 	for(yi=1; yi<size_y-1; yi++)
- 	for(xi=1; xi<size_x-1; xi++)
- 		grid[yi][xi] = grid2[yi][xi];
-
-
-
+	}
+ 	for(yIndex=1; yIndex<size_y-1; yIndex++)
+ 	for(xIndex=1; xIndex<size_x-1; xIndex++)
+ 		grid[yIndex][xIndex] = grid2[yIndex][xIndex];
  }
 
- void printmap(void)
- {
-     BMP AnImage;
-
-    AnImage.SetSize(size_x,size_y);
-
-    AnImage.SetBitDepth(32);
-
-
- 	int xi, yi;
-
- 	for(yi=0; yi<size_y; yi++)
- 	{
- 		for(xi=0; xi<size_x; xi++)
- 		{
- 			switch(grid[yi][xi]) {
- 				//case TILE_WALL:  putchar(178); break;
- 				case TILE_FLOOR: //putchar(176);
- 				AnImage(xi,yi)->Red = 0;
-                AnImage(xi,yi)->Green = 0;
-                AnImage(xi,yi)->Blue = 0;
-                AnImage(xi,yi)->Alpha = 0; break;
- 			}
- 		}
- 		//putchar('\n');
- 	}
- 	sprintf(filename,"File%03d.bmp",repetitor);
-
-    AnImage.WriteToFile(filename);
-
-
- }
-
- int main(int argc, char **argv)
- {
- 	int jj;
-
- 	if(argc < 7) {
- 		printf("Usage: %s xsize ysize fill (r1 r2 count) seed+\n", argv[0]);
- 		return 1;
- 	}
- 	size_x     = atoi(argv[1]);
- 	size_y     = atoi(argv[2]);
- 	fillprob   = atoi(argv[3]);
-    r1_cutoff  = atoi(argv[4]);
-    r2_cutoff  = atoi(argv[5]);
-    reps = atoi(argv[6]);
-    seed1 = atoi(argv[7]);
-
-
-while (repetitor <100){
-     srand(seed1);
-     initmap();
-for(jj=0; jj<reps; jj++)
+void printmap(void)
 {
-    generation();
-    srand(seed1);
+BMP AnImage;
+AnImage.SetSize(size_x,size_y);
+AnImage.SetBitDepth(32);
+int xIndex, yIndex;
+for(yIndex=0; yIndex<size_y; yIndex++)
+{
+	for(xIndex=0; xIndex<size_x; xIndex++)
+	{
+		switch(grid[yIndex][xIndex]){
+			
+			case EMPTY_SPACE:
+ 				AnImage(xIndex,yIndex)->Red   = 0;
+				AnImage(xIndex,yIndex)->Green = 0;
+				AnImage(xIndex,yIndex)->Blue  = 0;
+				AnImage(xIndex,yIndex)->Alpha = 0; break;
+			
+			//case FILLED_SPACE:  putchar('#'); break;
+ 			//case EMPTY_SPACE: putchar('.'); break;
+		}
+	}
+	//putchar('\n');
+}
+sprintf(filename,"File%03d.bmp",nGraphemes);
+AnImage.WriteToFile(filename);
 }
 
-
-
- 	//putchar('\n');
- 	printmap();
- sprintf(runz,"potrace --svg File%03d.bmp",repetitor);
-    repetitor++;
-    seed1++;
-
-system(runz);
-     }
- 	return seed1;
- }
+int main(int argc, char **argv)
+{
+int thisGeneration;
+if(argc < 9) {
+	printf("Usage: %s xsize ysize fillProb r1 r1_level r2  r2_level nGenerations seed+\n", argv[0]);
+	return 1;
+}
+size_x            = atoi(argv[1]);
+size_y            = atoi(argv[2]);
+fillProbability   = atoi(argv[3]);
+r1_cutoff_level   = atoi(argv[4]);
+r1_cutoff         = atoi(argv[5]);
+r2_cutoff_level   = atoi(argv[6]);
+r2_cutoff         = atoi(argv[7]);
+generations       = atoi(argv[8]);
+seedNumber        = atoi(argv[9]);
+while (nGraphemes <100){
+	srand(seedNumber); //seedrandom the input seed
+	initmap();
+	for(thisGeneration=0; thisGeneration<generations; thisGeneration++){
+		generation();
+		srand(seedNumber);
+	}
+	printmap();
+	sprintf(runz,"potrace --svg File%03d.bmp",nGraphemes);
+	nGraphemes++;
+	seedNumber++;
+	system(runz);
+}
+return seedNumber;
+}
