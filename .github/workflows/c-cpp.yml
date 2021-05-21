@@ -12,9 +12,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: configure
-      run: ./configure
-    - name: clean
-      run: make all
-    - name: make all
+    - name: checkout master
+      uses: actions/checkout@v2
+    - name: build pgg
+      run: |
+       mkdir bin
+       make clean all
