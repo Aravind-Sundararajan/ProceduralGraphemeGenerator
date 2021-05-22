@@ -13,7 +13,7 @@ jobs:
 
     steps:
     - name: get dependencies
-      run: sudo apt-get install fontforge
+      run: sudo apt-get install fontforge potrace
     - name: checkout master
       uses: actions/checkout@v2
     - name: build pgg
