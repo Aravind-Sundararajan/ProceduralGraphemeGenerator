@@ -12,9 +12,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: get dependencies
+      run: sudo apt-get install fontforge
     - name: checkout master
       uses: actions/checkout@v2
     - name: build pgg
       run: |
        mkdir bin
        make clean all
+       ./pgg 16 16 56 5 2 1
