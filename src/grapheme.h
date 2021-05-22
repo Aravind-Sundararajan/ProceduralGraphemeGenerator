@@ -5,39 +5,34 @@ using namespace std;
 
 class grapheme
 {
+
+
 	public:
 		typedef vector<bool> Vec;
     typedef vector<Vec> Mat;
 
-    Mat g;
-
 		//destructor
 		~grapheme();
 
-		grapheme();
+		grapheme(unsigned int RR, unsigned int CC);
 
-		grapheme(const Mat in);
+    void set(int y, int x, bool b);
 
-		//copy constructor
-		grapheme(const grapheme& g);
+    bool get(int y, int x);
 
+    void randomize(int p);
 
-		//copy assignment constructor
-		grapheme& operator=(const grapheme& g);
+    size_t nrows();
 
-		//getters
-		bool operator()(unsigned int x,unsigned int y) const;
+    size_t ncols();
 
-		bool get(unsigned int x, unsigned int y) const;
-
-		//setters
-		void set(unsigned int x, unsigned int y, bool v);
-
-		//print as bool matrix
+    //print as bool matrix
 		void printb();
 
-    //flip the bit at the index
-    void flip(unsigned int x, unsigned int y);
+  private:
+    Mat g;
+    size_t n_rows;
+    size_t n_cols;
 
 };
 #endif

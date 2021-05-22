@@ -2,61 +2,63 @@
 
 grapheme::~grapheme()
 {
-  g.clear();
-  g.shrink_to_fit();
 }
 
-grapheme::grapheme()
+grapheme::grapheme(unsigned int RR, unsigned int CC)
 {
-  Mat g;
+  n_rows = RR;
+  n_cols = CC;
+  for (unsigned int j = 0; j < CC; j ++){
+    Vec b;
+    for (unsigned int i = 0; i < RR; i ++){
+      b.push_back(false);
+    }
+    g.push_back(b);
+  }
 }
 
-//copy constructor
-grapheme::grapheme(const grapheme& _g)
+size_t grapheme::nrows()
 {
-  g = _g.g;
+  return n_rows;
 }
 
-//copy assignment constructor
-grapheme& grapheme::operator=(const grapheme& _g)
+size_t grapheme::ncols()
 {
-  g = _g.g;
-  return *this;
+  return n_cols;
 }
 
-//getters
-bool grapheme::operator()(unsigned int x,unsigned int y) const
+void grapheme::set(int y, int x, bool b)
 {
-  return g[y][x];
+g[y][x] =  b;
 }
 
-bool grapheme::get(unsigned int x, unsigned int y) const
+bool grapheme::get(int y ,int x)
 {
-  return g[y][x];
+return g[y][x];
 }
 
-//setters
-void grapheme::set(unsigned int x, unsigned int y, bool v)
-{
-  g[y][x] = v;
+//randomize the matrix
+void grapheme::randomize(int p){
+  for (unsigned int j = 0; j < g.size(); j ++){
+    for (unsigned int i = 0; i < g[0].size(); i ++){
+      g[j][i] =  rand()%100 < p;
+    }
+  }
 }
 
 //print as bool matrix
 void grapheme::printb()
 {
-  for (unsigned int i = 0; i < g.size(); i ++){
-    for (unsigned int j = 0; j < g[0].size(); j ++){
-      if (g[i][j]){
+  cout << "size::"  << g.size() << std::endl;
+  for (unsigned int j = 0; j < g.size(); j ++){
+    for (unsigned int i = 0; i < g[0].size(); i ++){
+      if (g[j][i]){
         std::cout << "#";
       }else{
         std::cout << " ";
       }
-    }
-  }
-}
 
-//flip the bit at the index
-void grapheme::flip(unsigned int x, unsigned int y)
-{
-  g[y][x] = !g[y][x];
+    }
+    std::cout << std::endl;
+  }
 }
