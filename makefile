@@ -15,5 +15,5 @@ pgg.o: $(srcdir)proceduralGraphemeGenerator.cpp
 proceduralGraphemeGenerator: base.o grapheme.o generator.o pgg.o
 	$(CC) $(CFLAGS) $(INCLUDES) -o pgg $(bindir)base.o $(bindir)grapheme.o $(bindir)generator.o $(bindir)pgg.o $(libdir)EasyBMP.cpp
 clean:
-	rm -f *.exe pgg && cd $(bindir) && rm -f *.o
+	rm -f *.exe pgg && rm -rf *.svg && rm -rf *.bmp && rm -rf *.ttf && cd $(bindir) && rm -f *.o
 all: proceduralGraphemeGenerator
